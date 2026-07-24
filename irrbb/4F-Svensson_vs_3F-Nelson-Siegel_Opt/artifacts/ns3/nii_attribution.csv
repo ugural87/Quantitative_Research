@@ -1,0 +1,21 @@
+product,parallel_up,parallel_down
+Cash and reserves,2.0,-2.0
+Consumer fixed,0.0,0.0
+Corporate fixed,0.0,0.0
+Corporate floating,5.0,-4.999999999999998
+HQLA securities fixed,0.0,0.0
+Mortgage fixed,0.0,0.0
+Mortgage floating,2.916666666666668,-2.916666666666666
+NMD Retail non-transactional core,-0.10140296822203165,0.06373900859670556
+NMD Retail non-transactional non-core,-0.5187762542237462,0.32608793122635515
+NMD Retail transactional core,-0.021134178032242268,0.011271561617196113
+NMD Retail transactional non-core,-0.2346328787103118,0.12513753531216643
+NMD Wholesale core,-0.17079451974963777,0.13138039980741384
+NMD Wholesale non-core,-0.9020321869911354,0.693870913070104
+Pay-fixed receive-floating IRS,2.500000000000001,-2.5
+Retail term deposits,0.0,0.0
+SME floating,2.916666666666668,-2.916666666666668
+Secured funding floating,-3.333333333333332,3.333333333333334
+Term funding fixed,0.0,0.0
+Wholesale floating,-4.166666666666666,4.166666666666667
+Wholesale overnight,-4.0,4.0

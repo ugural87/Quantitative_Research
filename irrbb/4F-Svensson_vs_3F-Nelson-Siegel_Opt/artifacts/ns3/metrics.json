@@ -1,0 +1,66 @@
+{
+  "model_key": "ns3",
+  "model_name": "Three-factor Nelson\u2013Siegel",
+  "data_source": "Federal Reserve GSW SVENY zero-coupon curve (live)",
+  "reference_date": "2026-07-17",
+  "observations": 1000,
+  "train_observations": 600,
+  "validation_observations": 200,
+  "test_observations": 200,
+  "lambda1_years": 2.6153946544185613,
+  "lambda2_years": null,
+  "design_condition_number": 17.13173107149877,
+  "maximum_loading_correlation": 0.3751970453168394,
+  "vif": {
+    "loading_0": 1.0,
+    "loading_1": 1.1638365574929814,
+    "loading_2": 1.1638365574929812
+  },
+  "train_mean_rmse_bp": 4.100499227625125,
+  "validation_mean_rmse_bp": 3.5260353829316817,
+  "test_mean_rmse_bp": 3.387172331310879,
+  "test_p95_rmse_bp": 5.501277035176664,
+  "test_max_point_error_bp": 11.384195237778894,
+  "pca_explained_variance": [
+    0.8293485296392624,
+    0.12009940423543425,
+    0.028816586694097854
+  ],
+  "level_factor_abs_correlation": 0.5788914925331174,
+  "matched_factor_abs_correlation_mean": 0.6144112475384459,
+  "factor_correlation_matrix": {
+    "beta0": {
+      "PC1": 0.5788914925331174,
+      "PC2": 0.8540227912383364,
+      "PC3": 0.0005090551473846862
+    },
+    "beta1": {
+      "PC1": -0.2374810109720114,
+      "PC2": -0.977088491600575,
+      "PC3": 0.2024679402168609
+    },
+    "beta2": {
+      "PC1": 0.7867430111601404,
+      "PC2": -0.32444985232650925,
+      "PC3": -0.03798702516488363
+    }
+  },
+  "curve_shape_checks": {
+    "sampled_curve_dates": 40,
+    "discount_monotonicity_violations": 0,
+    "minimum_instantaneous_forward_pct": 3.865802274754763,
+    "maximum_instantaneous_forward_pct": 5.674225108608722
+  },
+  "nmd_core_ratio": 0.658909316403616,
+  "nmd_weighted_maturity_years": 1.8572233604598485,
+  "accounting_equity_mm": 199.99999999999977,
+  "tier1_capital_mm": 170.0,
+  "base_eve_mm": 271.1545791252077,
+  "worst_eve_scenario": "parallel_up",
+  "maximum_adverse_delta_eve_mm": 24.79213652190498,
+  "maximum_adverse_delta_eve_to_tier1_pct": 14.583609718767635,
+  "outlier_breach": false,
+  "base_nii_mm": 49.99230062573454,
+  "delta_nii_parallel_up_mm": 1.884560347404232,
+  "delta_nii_parallel_down_mm": -2.481845983703387
+}

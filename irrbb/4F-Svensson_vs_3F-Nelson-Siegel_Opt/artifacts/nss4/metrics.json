@@ -1,0 +1,72 @@
+{
+  "model_key": "nss4",
+  "model_name": "Four-factor Nelson\u2013Siegel\u2013Svensson",
+  "data_source": "Federal Reserve GSW SVENY zero-coupon curve (live)",
+  "reference_date": "2026-07-17",
+  "observations": 1000,
+  "train_observations": 600,
+  "validation_observations": 200,
+  "test_observations": 200,
+  "lambda1_years": 3.706451383335924,
+  "lambda2_years": 4.337050916282996,
+  "design_condition_number": 296.6970870153245,
+  "maximum_loading_correlation": 0.9636503815879135,
+  "vif": {
+    "loading_0": 1.0,
+    "loading_1": 10.520370546281573,
+    "loading_2": 133.68317360505569,
+    "loading_3": 146.97366317435376
+  },
+  "train_mean_rmse_bp": 2.461594629057924,
+  "validation_mean_rmse_bp": 1.6855288695598976,
+  "test_mean_rmse_bp": 2.3642335735718705,
+  "test_p95_rmse_bp": 4.497661263261613,
+  "test_max_point_error_bp": 9.306567287967038,
+  "pca_explained_variance": [
+    0.8293485296392624,
+    0.12009940423543425,
+    0.028816586694097854
+  ],
+  "level_factor_abs_correlation": 0.5750952170114686,
+  "matched_factor_abs_correlation_mean": 0.6918690507949332,
+  "factor_correlation_matrix": {
+    "beta0": {
+      "PC1": 0.5750952170114686,
+      "PC2": 0.6206495338884058,
+      "PC3": 0.49011494935722383
+    },
+    "beta1": {
+      "PC1": -0.22738634063951857,
+      "PC2": -0.7503425453032804,
+      "PC3": -0.4056077548562498
+    },
+    "beta2": {
+      "PC1": 0.47429283270870193,
+      "PC2": -0.2631761718454667,
+      "PC3": 0.6731875720166249
+    },
+    "beta3": {
+      "PC1": -0.35570137719985634,
+      "PC2": 0.2528349918572558,
+      "PC3": -0.7501693900700508
+    }
+  },
+  "curve_shape_checks": {
+    "sampled_curve_dates": 40,
+    "discount_monotonicity_violations": 0,
+    "minimum_instantaneous_forward_pct": 3.865005374051826,
+    "maximum_instantaneous_forward_pct": 5.709351110089174
+  },
+  "nmd_core_ratio": 0.658909316403616,
+  "nmd_weighted_maturity_years": 1.8572233604598485,
+  "accounting_equity_mm": 199.99999999999977,
+  "tier1_capital_mm": 170.0,
+  "base_eve_mm": 271.76475898139006,
+  "worst_eve_scenario": "parallel_up",
+  "maximum_adverse_delta_eve_mm": 24.82492921600243,
+  "maximum_adverse_delta_eve_to_tier1_pct": 14.602899538824959,
+  "outlier_breach": false,
+  "base_nii_mm": 49.87728012575202,
+  "delta_nii_parallel_up_mm": 1.884560347404232,
+  "delta_nii_parallel_down_mm": -2.481845983703394
+}

@@ -1,0 +1,22 @@
+segment,bucket,notional_mm,behavioural_maturity_y,beta_up,beta_down,repricing_lag_months,core_flag
+Retail transactional,overnight non-core,78.21095957010402,0.0027397260273972603,0.15,0.08,1,False
+Retail transactional,core 0.5Y,14.0894520214948,0.5,0.15,0.08,1,True
+Retail transactional,core 1Y,28.1789040429896,1.0,0.15,0.08,1,True
+Retail transactional,core 2Y,42.268356064484394,2.0,0.15,0.08,1,True
+Retail transactional,core 3Y,56.3578080859792,3.0,0.15,0.08,1,True
+Retail transactional,core 4Y,70.447260107474,4.0,0.15,0.08,1,True
+Retail transactional,core 5Y,70.447260107474,5.0,0.15,0.08,1,True
+Retail non-transactional,overnight non-core,74.1108934605352,0.0027397260273972603,0.35,0.22,1,False
+Retail non-transactional,core 0.25Y,11.588910653946481,0.25,0.35,0.22,1,True
+Retail non-transactional,core 0.5Y,11.588910653946481,0.5,0.35,0.22,1,True
+Retail non-transactional,core 1Y,17.38336598091972,1.0,0.35,0.22,1,True
+Retail non-transactional,core 2Y,28.9722766348662,2.0,0.35,0.22,1,True
+Retail non-transactional,core 3Y,28.9722766348662,3.0,0.35,0.22,1,True
+Retail non-transactional,core 4.5Y,17.38336598091972,4.5,0.35,0.22,1,True
+Wholesale,overnight non-core,69.3870913070104,0.0027397260273972603,0.65,0.5,0,False
+Wholesale,core 0.0833333Y,6.1225817385979235,0.08333333333333333,0.65,0.5,0,True
+Wholesale,core 0.25Y,4.591936303948442,0.25,0.65,0.5,0,True
+Wholesale,core 0.5Y,4.591936303948442,0.5,0.65,0.5,0,True
+Wholesale,core 1Y,6.1225817385979235,1.0,0.65,0.5,0,True
+Wholesale,core 2Y,6.1225817385979235,2.0,0.65,0.5,0,True
+Wholesale,core 4Y,3.0612908692989618,4.0,0.65,0.5,0,True

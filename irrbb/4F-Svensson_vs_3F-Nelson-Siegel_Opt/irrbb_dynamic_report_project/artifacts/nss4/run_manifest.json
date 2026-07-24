@@ -1,0 +1,31 @@
+{
+  "artifact_schema_version": "2.0",
+  "model_key": "nss4",
+  "model_name": "Four-factor Nelson\u2013Siegel\u2013Svensson",
+  "dataset_fingerprint": "38cad0a67e149b1c73ca0226c08ab8953a9c22eb0792e743e4685a32630f4310",
+  "report_group_id": "9ab3a69f7694905b883236669da47832841425b14610ff3ee2fcacb3d103cae6",
+  "data_source": "Federal Reserve GSW SVENY zero-coupon curve (live)",
+  "reference_date": "2026-07-17",
+  "generated_at_utc": "2026-07-24T15:55:43.351772+00:00",
+  "tables": {
+    "metrics.json": "968828e0c4d48242acb3ae9276376e0182cba39e375019a4c880f3695cd28b05",
+    "curve_parameters.csv": "9f58e892274b3ed3eb1e31fde7e93f4c5904d6f26171ba657033791c4c90971f",
+    "fit_diagnostics.csv": "8ca11e62cb8cfb547467c4d23e8728f73ad825dcf27976f01dc00e410cea5c80",
+    "factor_correlations.csv": "ce192d738d0ea1665b1658c1fd014ba4c25ec9a9c46beae466710f5fb27db37b",
+    "nmd_summary.csv": "2840eb9758e823849a2c7fa290706c515c69faa1a9c38f3a2b4aa5d6872ecfda",
+    "nmd_ladder.csv": "9fb650618ef520eaf23e43143bd0617c56709451a200b5bd8092512849c42fc6",
+    "repricing_gap.csv": "57b3ef6b35a56633b5a9adc62dd8d571992b7aa70144814ffb1d764e2b3a89e3",
+    "eve_scenarios.csv": "7afcd17eac451e126a02c4c0be8d6a0db2fc69a0eab773edcca5b3b0e69bc2c9",
+    "nii_attribution.csv": "018d8a5614ea3ebb4c6d2c6b11b80c6e8cccd300a24cc5bd546e467774f8b0dc",
+    "nmd_sensitivity.csv": "241876e03fb695f060a0b143a0988ee961c08f401f5167d73bad8166d1e07e2c"
+  },
+  "figures": {
+    "nss4_01_curve_fit.png": "301bec57ed13a4cab34208091a424a071d0dc1d1e137e45a97ea150922b11fde",
+    "nss4_02_factor_alignment.png": "b11a323d1fb1dc0dd959d2e5a2844a3d0c754305fae7fbc7ce63c4a18b7e397b",
+    "nss4_03_identification.png": "cd326123fdcf9d95e693989ee4b1f64c208595b6dc884ed7da62d33cafcc8341",
+    "nss4_05_nmd_profile.png": "2d3186f6e8039a088d91ad4ad673bbe99a6edced318d48faa8c805554924df6d",
+    "nss4_06_repricing_gap.png": "eb17dcfb5971279116d572d5ed0e3449ea46107ea36550f2fddd75699647bda8",
+    "nss4_07_eve_scenarios.png": "add0a4e36884344b75c9be519fc81772da78a12013932040eca75307d902c687",
+    "nss4_08_nii.png": "56b45603a20f04f8dcb7b457b41f57e799826b330477d77782a20c29b4640cd0"
+  }
+}

@@ -24,7 +24,7 @@ The central model-risk question is:
 
 > **Does a better in-sample or out-of-sample curve fit justify a more complex model when its factors are poorly identified and the downstream EVE/NII decision impact is immaterial?**
 
-The reference results show that the four-factor Svensson model reconstructs the observed curve slightly more accurately, while the three-factor Nelson–Siegel model provides materially stronger factor identification and economic interpretability. The difference between the two models' EVE and NII outputs is negligible relative to the sensitivity created by the behavioural NMD assumption. The recommended architecture therefore separates the purposes of **valuation**, **structural risk attribution**, **model challenge**, and **funds-transfer pricing** rather than forcing one parametric curve to perform all four roles.
+The current live-data reference results show that the four-factor Svensson model reconstructs the observed curve more accurately, while the three-factor Nelson–Siegel model is materially better conditioned and more parsimonious. Direct PCA-to-beta alignment is mixed rather than decisively superior for either model, so the recommendation is based on the joint evidence from fit, conditioning, VIF, downstream materiality and governance use. The difference between the two models' EVE and NII outputs is negligible relative to the sensitivity created by the behavioural NMD assumption. The architecture therefore separates **valuation/reconstruction**, **structural risk attribution**, **model challenge**, and **funds-transfer pricing** rather than forcing one parametric curve to perform all four roles.
 
 > **Scope statement:** this is an auditable research and portfolio prototype, not a production regulatory engine, an approved internal measurement system, or a complete implementation of the Basel standardised framework.
 
@@ -453,86 +453,80 @@ It remains simplified relative to production valuation because it does not imple
 
 ---
 
-## 10. Reference results
+## 10. Current live-data reference results
 
-The committed notebook outputs were generated using the deterministic offline reference panel so that the repository remains executable without network access. These values are demonstration results, not current market-risk numbers.
+The committed reference snapshot in this package was regenerated from the uploaded executions using the **Federal Reserve GSW SVENY zero-coupon curve (live)** with 1,000 chronological observations from 18 July 2022 through 17 July 2026. Future results are regenerated automatically by the reporting pipeline and should not be transcribed manually into the third notebook.
 
 ### Term-structure model comparison
 
-| Metric | Four-factor Svensson | Three-factor Nelson–Siegel | Preferred result |
+| Metric | Four-factor Svensson | Three-factor Nelson–Siegel | Interpretation |
 |---|---:|---:|---|
-| Test mean RMSE | **0.496 bp** | 0.556 bp | Svensson |
-| Test 95th-percentile RMSE | **0.744 bp** | 0.828 bp | Svensson |
-| Test maximum point error | 2.080 bp | **2.075 bp** | Approximately equal |
-| Loading condition number | 231.5 | **17.5** | Nelson–Siegel |
-| Maximum loading correlation | 0.984 | **0.545** | Nelson–Siegel |
-| `|corr(PC1, Δβ0)|` | 0.246 | **0.924** | Nelson–Siegel |
-| Mean matched PC–beta correlation | 0.201 | **0.933** | Nelson–Siegel |
+| Test mean RMSE | **2.364 bp** | 3.387 bp | Svensson reconstructs the held-out curve more closely. |
+| Test 95th-percentile RMSE | **4.498 bp** | 5.501 bp | Svensson also has the lower tail-fit error. |
+| Test maximum point error | **9.307 bp** | 11.384 bp | Svensson has the lower worst point error. |
+| Loading condition number | 296.7 | **17.1** | NS is materially better conditioned. |
+| Maximum loading correlation | 0.964 | **0.375** | NSS loadings compete much more strongly. |
+| `abs(corr(PC1, Δβ0))` | 0.575 | 0.579 | No decisive direct level-factor winner. |
+| Mean matched PC–beta correlation | 0.692 | 0.614 | Not dimension-neutral; NSS has four candidate betas for three PCs. |
 
 ### IRRBB outputs
 
 | Metric | Four-factor Svensson | Three-factor Nelson–Siegel |
 |---|---:|---:|
-| Base EVE | 277.370 mm | 277.365 mm |
+| Base EVE | 271.765 mm | 271.155 mm |
 | Worst EVE scenario | Parallel up | Parallel up |
-| Maximum adverse ΔEVE | 25.051 mm | 25.050 mm |
-| Maximum adverse ΔEVE / Tier 1 | 14.736% | 14.735% |
+| Maximum adverse ΔEVE | 24.825 mm | 24.792 mm |
+| Maximum adverse ΔEVE / Tier 1 | 14.603% | 14.584% |
 | Basel outlier threshold breached | No | No |
-| Base twelve-month NII | 49.184 mm | 49.184 mm |
+| Base twelve-month NII | 49.877 mm | 49.992 mm |
 | ΔNII, parallel up | +1.885 mm | +1.885 mm |
 | ΔNII, parallel down | −2.482 mm | −2.482 mm |
 
 ### NMD key-assumption sensitivity
 
-Using the three-factor engine:
+Using the four-factor engine for illustration:
 
 | Core NMD scale | Worst adverse ΔEVE / Tier 1 | Diagnostic result |
 |---:|---:|---|
-| 80% | **17.177%** | Threshold breached |
-| 100% | 14.735% | Below threshold, high utilisation |
-| 120% | 12.894% | Below threshold |
+| 80% | **17.035%** | Threshold breached |
+| 100% | 14.603% | Below threshold, high utilisation |
+| 120% | 12.769% | Below threshold |
 
 ### Interpretation
 
-The four-factor model buys approximately 0.06 bp of mean test RMSE improvement, but its loading matrix is substantially less identifiable and its beta changes have weak correspondence with empirical curve factors.
+The four-factor model reduces mean test RMSE by approximately 1.023 bp, or 30.2% relative to NS, but its loading matrix is roughly 17.3 times more ill-conditioned and its curvature VIFs are very high. Direct PCA alignment is mixed rather than decisively better for NS, so the model decision should not rely on a simplistic textbook PC-to-beta mapping.
 
-The two models generate almost identical EVE and NII outputs under the common downstream engine. By contrast, changing the core NMD assumption materially changes the Tier 1-normalised EVE result and can move the illustrative bank across the supervisory threshold.
+The two models nevertheless generate extremely similar stressed EVE and ΔNII decisions under the common downstream engine. By contrast, changing the core NMD assumption materially changes the Tier 1-normalised EVE result and can move the illustrative bank across the supervisory threshold.
 
 The business conclusion is therefore:
 
-> **Behavioural-model risk dominates term-structure model-form risk in this reference banking book.**
+> **In this banking-book configuration, behavioural NMD risk is materially more decision-relevant than the downstream EVE/NII difference between the two curve representations.**
 
 ---
 
-## 11. Final model recommendation
+## 11. Current model recommendation
 
-### Primary structural model
+### Structural benchmark
 
-Use the **three-factor Nelson–Siegel model** as the structural risk-attribution benchmark because it provides:
+Use the **three-factor Nelson–Siegel model** as the parsimonious structural and governance benchmark because it provides:
 
 - materially better numerical conditioning;
-- clearer level–slope–curvature interpretation;
-- stronger alignment with empirical PCA factors; and
-- essentially unchanged downstream EVE/NII decisions in the reference case.
+- much lower loading collinearity and VIF;
+- fewer redundant parameters; and
+- essentially unchanged downstream EVE and ΔNII decisions in the current case.
 
-### Challenger model
+This recommendation is based on parsimony and numerical identification, not on a claim that NS has decisively stronger PCA alignment in the current live-data run.
+
+### Reconstruction and valuation challenger
 
 Retain the **four-factor Svensson model** as:
 
-- a flexible reconstruction challenger;
-- a residual-shape diagnostic;
-- a long-end fit benchmark; and
-- a model-risk sensitivity tool.
+- the more accurate held-out curve-reconstruction challenger;
+- a residual-shape and long-end fit diagnostic;
+- a valuation sensitivity benchmark; and
+- a model-form challenge for the structural benchmark.
 
-It should not be treated automatically as a four-factor economic attribution model when the additional loading is nearly collinear with existing factors.
-
-### Valuation curve
-
-Neither notebook should replace the bank's approved curve-construction service. Production valuation should use approved market instruments, conventions, interpolation, bootstrapping, projection/discount curves and governance controls.
-
-### Behavioural models
-
-NMD, prepayment, early-redemption and administered-rate models should be independently estimated, validated, monitored and subjected to sensitivity and stress testing because their impact can exceed the difference between curve parameterisations.
+The production architecture should still use a separately approved discounting and projection curve service. Neither parametric factor model should automatically be treated as the bank's complete FTP curve.
 
 ---
 
@@ -560,13 +554,15 @@ The Federal Reserve `SVENYxx` series are continuously compounded zero-coupon yie
 ## 13. Project structure
 
 ```text
-irrbb_portfolio_project/
+irrbb_dynamic_report_project/
 ├── 01_four_factor_svensson_irrbb_engine.ipynb
 ├── 02_three_factor_nelson_siegel_irrbb_engine.ipynb
 ├── 03_model_risk_business_architecture_case_study.ipynb
 ├── README.md
 ├── requirements.txt
-├── build_project.py
+├── build_report.py
+├── run_pipeline.py
+├── Makefile
 ├── data/
 │   └── offline_reference_zero_curve.csv
 └── artifacts/
@@ -579,6 +575,7 @@ irrbb_portfolio_project/
     │   └── nss4_*.png
     ├── ns3/
     │   ├── metrics.json
+    │   ├── run_manifest.json
     │   ├── curve_parameters.csv
     │   ├── fit_diagnostics.csv
     │   ├── factor_correlations.csv
@@ -628,7 +625,7 @@ Contains high-level model and risk metrics, including:
 | `nii_attribution.csv` | Product-level twelve-month NII attribution |
 | `nmd_sensitivity.csv` | Core NMD assumption sensitivity |
 
-This common contract allows the report notebook to remain markdown-only and prevents narrative numbers from drifting away from model outputs.
+This common contract allows the report notebook to remain Markdown-only and prevents narrative numbers from drifting away from model outputs. Each engine also writes `run_manifest.json`, containing the shared dataset fingerprint, report-group ID and SHA-256 hashes of every source table and model figure. `build_report.py` validates those manifests before generating any report content.
 
 ---
 
@@ -670,31 +667,93 @@ The requirements file pins the direct runtime and notebook-execution dependencie
 
 ---
 
-## 16. Execution order
+## 16. Automated execution and report regeneration
 
-Run from the project root:
+The third notebook is intentionally **Markdown-only**. A notebook with no code cells cannot read JSON, rebuild tables and refresh images by itself. It is therefore treated as a **generated report artifact**, not as a manually maintained analytical notebook.
+
+The reporting workflow is:
+
+```text
+Notebook 1: four-factor NSS
+        │
+        ├── metrics.json
+        ├── run_manifest.json
+        ├── CSV result tables
+        └── model PNG figures
+                │
+Notebook 2: three-factor NS
+        │       │
+        ├── same artifact contract
+        └───────┤
+                ▼
+        build_report.py
+                │
+                ├── cross-model lineage validation
+                ├── SHA-256 artifact verification
+                ├── conditional interpretation
+                ├── comparison-figure generation
+                └── image attachment embedding
+                ▼
+03_model_risk_business_architecture_case_study.ipynb
+        Markdown cells only
+```
+
+### Recommended one-command workflow
+
+From the project root, execute both model notebooks in clean kernels and regenerate the report:
+
+```bash
+python run_pipeline.py --data-mode LIVE
+```
+
+`LIVE` requires the Federal Reserve dataset and fails rather than silently falling back to synthetic input.
+
+For automatic live-then-fallback behaviour:
+
+```bash
+python run_pipeline.py --data-mode AUTO
+```
+
+For the deterministic offline reference panel:
+
+```bash
+python run_pipeline.py --data-mode OFFLINE
+```
+
+Equivalent Make targets are included:
+
+```bash
+make live
+make auto
+make offline
+```
+
+### Rebuild only the third notebook
+
+When Notebook 1 and Notebook 2 have already been executed and their artifacts are current:
+
+```bash
+python run_pipeline.py --report-only
+```
+
+or:
+
+```bash
+python build_report.py
+```
+
+The builder refuses to create a report when the two runs differ in dataset fingerprint, report-group ID, data source, reference date, sample sizes or Tier 1 capital. It also verifies the SHA-256 hashes recorded in each model's `run_manifest.json`.
+
+### Manual Jupyter workflow
+
+The notebooks may also be run interactively in this order:
 
 1. `01_four_factor_svensson_irrbb_engine.ipynb`
 2. `02_three_factor_nelson_siegel_irrbb_engine.ipynb`
-3. Open `03_model_risk_business_architecture_case_study.ipynb`
+3. `python build_report.py`
+4. open `03_model_risk_business_architecture_case_study.ipynb`
 
-The first two notebooks regenerate their model-specific artifacts. The third notebook is a committed markdown snapshot built from those machine-readable outputs.
-
-For the deterministic committed results:
-
-```bash
-export IRRBB_DATA_MODE=OFFLINE
-jupyter lab
-```
-
-For current Federal Reserve data:
-
-```bash
-export IRRBB_DATA_MODE=LIVE
-jupyter lab
-```
-
-When live data are used, numerical results and the report snapshot should be regenerated before presentation.
+The report should never be edited to update numerical results manually. Changes to the model outputs must flow through the artifact contract and report builder.
 
 ---
 
@@ -710,7 +769,7 @@ The project supports reproducibility through:
 - common configuration and artifact contracts;
 - hard assertions for integration and governance checks;
 - saved figures and tabular outputs; and
-- a transparent `build_project.py` script used to assemble and validate the package.
+- transparent `run_pipeline.py` and `build_report.py` scripts used to execute, validate and regenerate the package.
 
 The build script is included for auditability. It should be reviewed before use in a different environment because rebuilding the package regenerates notebooks and reference artifacts.
 

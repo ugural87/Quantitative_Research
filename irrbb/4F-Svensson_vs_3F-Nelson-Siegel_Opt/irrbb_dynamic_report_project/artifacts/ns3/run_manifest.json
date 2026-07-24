@@ -1,0 +1,31 @@
+{
+  "artifact_schema_version": "2.0",
+  "model_key": "ns3",
+  "model_name": "Three-factor Nelson\u2013Siegel",
+  "dataset_fingerprint": "38cad0a67e149b1c73ca0226c08ab8953a9c22eb0792e743e4685a32630f4310",
+  "report_group_id": "9ab3a69f7694905b883236669da47832841425b14610ff3ee2fcacb3d103cae6",
+  "data_source": "Federal Reserve GSW SVENY zero-coupon curve (live)",
+  "reference_date": "2026-07-17",
+  "generated_at_utc": "2026-07-24T15:55:53.404235+00:00",
+  "tables": {
+    "metrics.json": "88669c7e5fe120852db5e763be5a58c18f5fbb522a40045da6f8a82a1ca7e7a1",
+    "curve_parameters.csv": "4a337ab30cc31c33d9e1797f2a87020c6dd585d93adf69a4554c58cf3c147575",
+    "fit_diagnostics.csv": "340b55f027ce1720fad381c3d871f308b67cd3e3ae5795f8a90a40524e261be0",
+    "factor_correlations.csv": "fad1ec6802729ef0ee283d95073d99ebf3417766bc2a17375a4935d40de36cff",
+    "nmd_summary.csv": "2840eb9758e823849a2c7fa290706c515c69faa1a9c38f3a2b4aa5d6872ecfda",
+    "nmd_ladder.csv": "9fb650618ef520eaf23e43143bd0617c56709451a200b5bd8092512849c42fc6",
+    "repricing_gap.csv": "57b3ef6b35a56633b5a9adc62dd8d571992b7aa70144814ffb1d764e2b3a89e3",
+    "eve_scenarios.csv": "e5242fde11e555241e8290bc80ad3c07fff1ac374ac29cf3a503daaa4b36b981",
+    "nii_attribution.csv": "ac825fef0b147f7d5604e8c9b5fb4da6f24ee53e1557ffabffe9bc5746392d6f",
+    "nmd_sensitivity.csv": "8b2ad6d2d62ff2d24f971bb6e300ccda7865f5443aae50e1e0eba1a184a55a72"
+  },
+  "figures": {
+    "ns3_01_curve_fit.png": "1c7d9e4a16f5477005b64ed1b30a67805b04aa1710dfd607f6cd4ad823b2097a",
+    "ns3_02_factor_alignment.png": "d0d952d1d90da467b7e793b466563ea87e8c92b0a712c5f3427a975ebcad0595",
+    "ns3_03_identification.png": "7864ff1770f4e7be77efde7b5fb0f96198c65ca5d38c48a0534e89d0a5e06162",
+    "ns3_05_nmd_profile.png": "2d3186f6e8039a088d91ad4ad673bbe99a6edced318d48faa8c805554924df6d",
+    "ns3_06_repricing_gap.png": "eb17dcfb5971279116d572d5ed0e3449ea46107ea36550f2fddd75699647bda8",
+    "ns3_07_eve_scenarios.png": "ea21a0e1c4bc661fa1a41e486b3ff565b0ddd96ea22ab7135b395386829b9edb",
+    "ns3_08_nii.png": "3624b1834876e9c4fdfa10c598bccd1220ae466f2f1f3d1ea9ba75864f915859"
+  }
+}

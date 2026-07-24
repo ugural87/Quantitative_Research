@@ -1,7 +1,11 @@
 {
+  "artifact_schema_version": "2.0",
   "model_key": "nss4",
   "model_name": "Four-factor Nelson\u2013Siegel\u2013Svensson",
   "data_source": "Federal Reserve GSW SVENY zero-coupon curve (live)",
+  "dataset_fingerprint": "38cad0a67e149b1c73ca0226c08ab8953a9c22eb0792e743e4685a32630f4310",
+  "report_group_id": "9ab3a69f7694905b883236669da47832841425b14610ff3ee2fcacb3d103cae6",
+  "generated_at_utc": "2026-07-24T15:55:43.351772+00:00",
   "reference_date": "2026-07-17",
   "observations": 1000,
   "train_observations": 600,

@@ -1,0 +1,122 @@
+# ==========================================
+# Data & Datasets (Folders & Files)
+# ==========================================
+# Data directories
+data/
+datasets/
+raw_data/
+processed_data/
+inputs/
+outputs/
+exports/
+dump/
+dumps/
+
+# Tabular, columnar & binary data extensions
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.ods
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.json
+*.jsonl
+*.orc
+*.avro
+*.sqlite
+*.db
+*.sqlite3
+
+# ==========================================
+# Trained Models & Checkpoints
+# ==========================================
+models/
+checkpoints/
+weights/
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+*.ckpt
+*.pb
+*.pbtxt
+*.tflite
+
+# ==========================================
+# Python Standard & Caches
+# ==========================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# Logs, Visualizations & Metrics
+# ==========================================
+logs/
+runs/
+tensorboard/
+wandb/
+mlruns/
+*.log
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+
+# ==========================================
+# Environments & Credentials
+# ==========================================
+.env
+.env.*
+!.env.example
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ==========================================
+# Jupyter Notebooks & IDE Cache
+# ==========================================
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store

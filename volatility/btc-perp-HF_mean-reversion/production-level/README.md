@@ -1,6 +1,6 @@
 # BTC Spot–Perpetual Basis: A State-Space Study
 
-[![tests](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![tests](https://github.com/ugural87/btw-perp-HF_mean-reversion/actions/workflows/ci.yml/badge.svg)](https://github.com/ugural87/btw-perp-HF_mean-reversion/actions/workflows/ci.yml)
 
 <!-- Replace OWNER/REPO above with your GitHub username and repository name. -->
 

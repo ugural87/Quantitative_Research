@@ -1,4 +1,4 @@
-"""Production-oriented state-space model for a spot-perpetual basis series.
+"""Research-grade state-space model for a spot-perpetual basis series.
 
 Model
 -----
@@ -28,7 +28,7 @@ from scipy.optimize import OptimizeResult, minimize
 from scipy.special import expit, logit
 from scipy.stats import chi2, jarque_bera
 
-try:  # Optional but strongly recommended for repeated walk-forward fitting.
+try:  # Optional but strongly recommended for repeated maximum-likelihood fitting.
     from numba import njit
 
     _NUMBA_AVAILABLE = True
@@ -37,7 +37,7 @@ except ImportError:  # pragma: no cover - exercised only in minimal environments
     _NUMBA_AVAILABLE = False
 
 ArrayLike = Sequence[float] | np.ndarray
-SampleMode = Literal["head", "tail", "uniform"]
+SampleMode = Literal["head", "tail"]
 
 _EPS = np.finfo(float).eps
 _MIN_SIGMA = 1e-12
@@ -243,6 +243,37 @@ class StateSpaceFit:
         return cls(**raw)
 
 
+@dataclass(frozen=True)
+class ModelAdequacyReport:
+    """Explicit verdict on innovation diagnostics.
+
+    ``dynamic_passed`` covers the parts needed for a usable conditional-mean
+    model: approximately centred/unit-scaled innovations without detectable
+    residual autocorrelation. ``gaussian_passed`` is reported separately because
+    heavy tails are common in market data and call for a robust likelihood even
+    when the conditional dynamics are otherwise acceptable.
+    """
+
+    passed: bool
+    dynamic_passed: bool
+    gaussian_passed: bool
+    diagnostics: dict[str, float]
+    failures: tuple[str, ...]
+    warnings: tuple[str, ...]
+    alpha: float
+
+    def summary(self) -> str:
+        lines = [
+            "State-space model adequacy",
+            f"  overall pass       : {self.passed}",
+            f"  dynamic pass       : {self.dynamic_passed}",
+            f"  Gaussian pass      : {self.gaussian_passed}",
+        ]
+        lines.extend(f"  failure            : {item}" for item in self.failures)
+        lines.extend(f"  warning            : {item}" for item in self.warnings)
+        return "\n".join(lines)
+
+
 @dataclass
 class FilterResult:
     level: np.ndarray
@@ -257,9 +288,50 @@ class FilterResult:
     loglik_contribution: np.ndarray
 
     @property
-    def transient_z(self) -> np.ndarray:
+    def transient_filter_t(self) -> np.ndarray:
+        """Posterior signal-to-filter-uncertainty ratio.
+
+        This is useful for state-estimation confidence, but it is not the
+        economic amplitude used for entry thresholds.
+        """
+
         sd = np.sqrt(np.maximum(self.filtered_variance_transient, _EPS))
         return self.transient / sd
+
+    def transient_stationary_z(self, params: StateSpaceParams) -> np.ndarray:
+        """Transient divided by its stationary structural standard deviation."""
+
+        return self.transient / params.transient_sd
+
+    @property
+    def transient_z(self) -> np.ndarray:
+        """Deprecated ambiguous alias for :attr:`transient_filter_t`."""
+
+        warnings.warn(
+            "FilterResult.transient_z is ambiguous; use transient_filter_t for "
+            "posterior confidence or transient_stationary_z(params) for the "
+            "economic signal amplitude",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.transient_filter_t
+
+    def slice(self, start: int | None = None, stop: int | None = None) -> "FilterResult":
+        """Return a view-like result restricted to an evaluation interval."""
+
+        sl = slice(start, stop)
+        return FilterResult(
+            level=self.level[sl],
+            transient=self.transient[sl],
+            innovation=self.innovation[sl],
+            innovation_variance=self.innovation_variance[sl],
+            standardized_innovation=self.standardized_innovation[sl],
+            filtered_variance_level=self.filtered_variance_level[sl],
+            filtered_covariance=self.filtered_covariance[sl],
+            filtered_variance_transient=self.filtered_variance_transient[sl],
+            observed=self.observed[sl],
+            loglik_contribution=self.loglik_contribution[sl],
+        )
 
     def diagnostics(self, max_lag: int = 20) -> dict[str, float]:
         z = self.standardized_innovation[np.isfinite(self.standardized_innovation)]
@@ -292,6 +364,75 @@ class FilterResult:
             "jarque_bera": float(jb.statistic),
             "jarque_bera_p": float(jb.pvalue),
         }
+
+    def adequacy_report(
+        self,
+        *,
+        max_lag: int = 20,
+        alpha: float = 0.01,
+        mean_tolerance: float = 0.10,
+        sd_bounds: tuple[float, float] = (0.80, 1.20),
+        require_gaussian: bool = False,
+    ) -> ModelAdequacyReport:
+        """Turn diagnostics into an explicit research gate.
+
+        The Gaussian verdict is always reported.  Set ``require_gaussian=True``
+        when the normal likelihood itself must be accepted rather than treated
+        as a quasi-likelihood.
+        """
+
+        if not (0.0 < alpha < 1.0):
+            raise ValueError("alpha must be between 0 and 1")
+        if mean_tolerance < 0.0:
+            raise ValueError("mean_tolerance cannot be negative")
+        if not (0.0 < sd_bounds[0] < sd_bounds[1]):
+            raise ValueError("sd_bounds must be positive and increasing")
+
+        diag = self.diagnostics(max_lag=max_lag)
+        failures: list[str] = []
+        report_warnings: list[str] = []
+
+        if not math.isfinite(diag["mean"]):
+            failures.append("insufficient finite innovations")
+        else:
+            if abs(diag["mean"]) > mean_tolerance:
+                failures.append(
+                    f"innovation mean {diag['mean']:.4g} exceeds tolerance "
+                    f"{mean_tolerance:.4g}"
+                )
+            if not (sd_bounds[0] <= diag["sd"] <= sd_bounds[1]):
+                failures.append(
+                    f"innovation sd {diag['sd']:.4g} outside "
+                    f"[{sd_bounds[0]:.4g}, {sd_bounds[1]:.4g}]"
+                )
+            if diag["ljung_box_p"] < alpha:
+                failures.append(
+                    f"residual autocorrelation rejected at alpha={alpha:g} "
+                    f"(p={diag['ljung_box_p']:.3g})"
+                )
+
+        gaussian_passed = bool(
+            math.isfinite(diag["jarque_bera_p"])
+            and diag["jarque_bera_p"] >= alpha
+        )
+        if not gaussian_passed:
+            report_warnings.append(
+                f"Gaussian innovations rejected at alpha={alpha:g} "
+                f"(p={diag['jarque_bera_p']:.3g}); use robust inference or a "
+                "heavy-tailed observation model"
+            )
+
+        dynamic_passed = not failures
+        passed = dynamic_passed and (gaussian_passed or not require_gaussian)
+        return ModelAdequacyReport(
+            passed=passed,
+            dynamic_passed=dynamic_passed,
+            gaussian_passed=gaussian_passed,
+            diagnostics=diag,
+            failures=tuple(failures),
+            warnings=tuple(report_warnings),
+            alpha=float(alpha),
+        )
 
 
 @dataclass
@@ -491,10 +632,7 @@ def _select_sample(y: np.ndarray, max_obs: int | None, mode: SampleMode) -> np.n
         return y[:max_obs].copy()
     if mode == "tail":
         return y[-max_obs:].copy()
-    if mode == "uniform":
-        indices = np.linspace(0, y.size - 1, max_obs, dtype=int)
-        return y[indices].copy()
-    raise ValueError(f"unknown sample mode: {mode}")
+    raise ValueError(f"unknown sample mode: {mode}; use 'head' or 'tail'")
 
 
 if _NUMBA_AVAILABLE:
@@ -674,13 +812,20 @@ def fit_state_space(
     Parameters are fitted only to the supplied array.  For a backtest, the caller
     is responsible for passing a training slice that ends before the evaluation
     period.  ``max_obs`` defaults to ``None``: silent truncation is intentionally
-    forbidden.  If a cap is requested, ``sample_mode`` is recorded in the fit.
+    forbidden.  If a cap is requested, only a contiguous head or tail may be
+    selected; uniform thinning is rejected because it changes the effective time
+    step and would corrupt persistence and half-life interpretation.
     """
 
     if not (math.isfinite(dt) and dt > 0.0):
         raise ValueError("dt must be finite and positive")
     if burn_in < 0:
         raise ValueError("burn_in cannot be negative")
+    if sample_mode not in {"head", "tail"}:
+        raise ValueError(
+            "sample_mode must be 'head' or 'tail'; uniform thinning changes "
+            "the effective dt and is intentionally unsupported"
+        )
 
     source = _clean_series(values)
     y = _select_sample(source, max_obs, sample_mode)
@@ -843,12 +988,18 @@ class OnlineBasisFilter:
         self._state = state
         self.n_updates += 1
         assert result is not None
-        transient_sd = math.sqrt(max(state.p22, _EPS))
+        posterior_sd = math.sqrt(max(state.p22, _EPS))
+        stationary_z = state.transient / self.params.transient_sd
+        filter_t = state.transient / posterior_sd
         return {
             "level": state.level,
             "transient": state.transient,
-            "transient_filter_sd": transient_sd,
-            "transient_z": state.transient / transient_sd,
+            "transient_posterior_sd": posterior_sd,
+            "transient_stationary_z": stationary_z,
+            "transient_filter_t": filter_t,
+            # Backward-compatible key, now aligned with the notebook's economic
+            # threshold definition rather than posterior uncertainty.
+            "transient_z": stationary_z,
             "innovation": float(result.innovation[-1]),
             "innovation_sd": math.sqrt(float(result.innovation_variance[-1])),
         }
@@ -909,6 +1060,7 @@ def no_lookahead_check(
 
 __all__ = [
     "FilterResult",
+    "ModelAdequacyReport",
     "OnlineBasisFilter",
     "OptimizerRun",
     "StateSpaceFit",

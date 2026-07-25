@@ -168,3 +168,108 @@ def test_standardized_innovations_are_approximately_unit_variance(simulated, fit
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
+
+# --------------------------------------------------------------------------- #
+# Explicit signal semantics and research gates
+# --------------------------------------------------------------------------- #
+def test_signal_scalings_are_explicit():
+    y = simulate_state_space(2_000, TRUE_PARAMS, seed=11)["observed"]
+    result = filter_state_space(y, TRUE_PARAMS)
+
+    np.testing.assert_allclose(
+        result.transient_stationary_z(TRUE_PARAMS),
+        result.transient / TRUE_PARAMS.transient_sd,
+    )
+    np.testing.assert_allclose(
+        result.transient_filter_t,
+        result.transient / np.sqrt(result.filtered_variance_transient),
+    )
+
+
+def test_online_signal_matches_stationary_batch_definition():
+    y = simulate_state_space(1_000, TRUE_PARAMS, seed=12)["observed"]
+    batch = filter_state_space(y, TRUE_PARAMS)
+    online = OnlineBasisFilter(TRUE_PARAMS, initial_observation=float(y[0]))
+    online_z = [online.update(float(v))["transient_stationary_z"] for v in y]
+
+    np.testing.assert_allclose(
+        np.asarray(online_z),
+        batch.transient_stationary_z(TRUE_PARAMS),
+        atol=1e-9,
+        rtol=1e-6,
+    )
+
+
+def test_adequacy_gate_rejects_serially_correlated_innovations():
+    rng = np.random.default_rng(13)
+    z = np.zeros(2_000)
+    for i in range(1, z.size):
+        z[i] = 0.85 * z[i - 1] + rng.normal(scale=0.5)
+
+    result = filter_state_space(
+        simulate_state_space(2_000, TRUE_PARAMS, seed=14)["observed"],
+        TRUE_PARAMS,
+    )
+    result.standardized_innovation = z
+    report = result.adequacy_report(max_lag=20, alpha=0.01)
+    assert not report.dynamic_passed
+    assert any("autocorrelation" in item for item in report.failures)
+
+
+def test_fit_json_round_trip_preserves_parameters_and_metadata(tmp_path, fit):
+    path = tmp_path / "fit.json"
+    fit.save_json(path)
+    restored = type(fit).load_json(path)
+
+    assert restored.params == fit.params
+    assert restored.loglik == pytest.approx(fit.loglik)
+    assert restored.sample_mode == fit.sample_mode
+    assert restored.optimizer_runs == fit.optimizer_runs
+    assert restored.null_bic == pytest.approx(fit.null_bic)
+
+
+def test_uniform_sample_mode_is_rejected_even_without_a_cap(simulated):
+    with pytest.raises(ValueError, match="uniform thinning"):
+        fit_state_space(
+            simulated["observed"],
+            sample_mode="uniform",  # type: ignore[arg-type]
+            compare_null=False,
+        )
+
+
+def test_head_and_tail_caps_remain_contiguous(simulated):
+    head = fit_state_space(
+        simulated["observed"],
+        max_obs=1_000,
+        sample_mode="head",
+        compare_null=False,
+    )
+    tail = fit_state_space(
+        simulated["observed"],
+        max_obs=1_000,
+        sample_mode="tail",
+        compare_null=False,
+    )
+    assert head.n_obs == 1_000
+    assert tail.n_obs == 1_000
+    assert head.source_n_obs == simulated["observed"].size
+    assert tail.source_n_obs == simulated["observed"].size
+
+
+def test_adequacy_report_rejects_insufficient_innovations():
+    result = filter_state_space(
+        simulate_state_space(20, TRUE_PARAMS, seed=31)["observed"],
+        TRUE_PARAMS,
+    )
+    report = result.adequacy_report(max_lag=10)
+    assert not report.passed
+    assert "insufficient finite innovations" in report.failures
+
+
+def test_online_snapshot_and_history_contract(simulated):
+    history = simulated["observed"][:500]
+    online = OnlineBasisFilter.from_history(TRUE_PARAMS, history)
+    snapshot = online.snapshot()
+    assert online.n_updates == 500
+    assert set(snapshot) == {"level", "transient", "p11", "p12", "p22"}
+    assert all(math.isfinite(value) for value in snapshot.values())

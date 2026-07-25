@@ -1,0 +1,50 @@
+name: BTC basis single-day tests
+
+on:
+  push:
+    paths:
+      - "volatility/btc-perp-HF_mean-reversion/btc_basis_single_day_state_space/**"
+      - ".github/workflows/btc_basis_single_day_state_space.yml"
+  pull_request:
+    paths:
+      - "volatility/btc-perp-HF_mean-reversion/btc_basis_single_day_state_space/**"
+      - ".github/workflows/btc_basis_single_day_state_space.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    defaults:
+      run:
+        working-directory: volatility/btc-perp-HF_mean-reversion/btc_basis_single_day_state_space
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: volatility/btc-perp-HF_mean-reversion/btc_basis_single_day_state_space/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Compile source
+        run: python -m compileall -q .
+
+      - name: Run tests
+        run: python -m pytest

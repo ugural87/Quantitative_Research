@@ -273,3 +273,90 @@ def test_online_snapshot_and_history_contract(simulated):
     assert online.n_updates == 500
     assert set(snapshot) == {"level", "transient", "p11", "p12", "p22"}
     assert all(math.isfinite(value) for value in snapshot.values())
+
+
+def test_leading_missing_states_do_not_use_first_future_observation():
+    a = np.array([np.nan, np.nan, 1.0, 1.1])
+    b = np.array([np.nan, np.nan, 2.0, 2.1])
+    result_a = filter_state_space(a, TRUE_PARAMS)
+    result_b = filter_state_space(b, TRUE_PARAMS)
+
+    assert np.isnan(result_a.level[:2]).all()
+    assert np.isnan(result_b.level[:2]).all()
+    assert np.isnan(result_a.transient[:2]).all()
+    assert np.isnan(result_b.transient[:2]).all()
+
+
+def test_gap_aware_diagnostics_do_not_compress_missing_clock_steps():
+    from state_space import FilterResult
+
+    n = 200
+    z = np.full(n, np.nan)
+    z[::2] = np.random.default_rng(41).normal(size=n // 2)
+    zeros = np.zeros(n)
+    result = FilterResult(
+        level=zeros,
+        transient=zeros,
+        innovation=z,
+        innovation_variance=np.ones(n),
+        standardized_innovation=z,
+        filtered_variance_level=zeros,
+        filtered_covariance=zeros,
+        filtered_variance_transient=zeros,
+        observed=zeros,
+        loglik_contribution=zeros,
+    )
+    diagnostics = result.diagnostics(max_lag=1)
+    assert diagnostics["minimum_exact_lag_pairs"] == 0.0
+    assert math.isnan(diagnostics["ljung_box_p"])
+    report = result.adequacy_report(max_lag=1)
+    assert not report.dynamic_passed
+    assert "insufficient exact-clock innovation pairs" in report.failures
+
+
+def test_filter_rejects_negative_burn_in(simulated):
+    with pytest.raises(ValueError, match="burn_in"):
+        filter_state_space(simulated["observed"], TRUE_PARAMS, burn_in=-1)
+
+
+def test_burn_in_is_counted_from_first_observation_not_from_leading_gap():
+    from state_space import _filter_core
+
+    observed = simulate_state_space(100, TRUE_PARAMS, seed=52)["observed"]
+    y = np.r_[np.full(7, np.nan), observed]
+    _, _, _, effective = _filter_core(
+        y,
+        TRUE_PARAMS,
+        burn_in=10,
+        store=False,
+    )
+    assert effective == 90
+
+
+def test_gap_aware_autocorrelation_is_not_diluted_by_random_missingness():
+    from state_space import FilterResult
+
+    rng = np.random.default_rng(53)
+    n = 8_000
+    phi = 0.8
+    z = np.zeros(n)
+    for t in range(1, n):
+        z[t] = phi * z[t - 1] + rng.normal()
+    z[rng.random(n) < 0.5] = np.nan
+    zeros = np.zeros(n)
+    result = FilterResult(
+        level=zeros,
+        transient=zeros,
+        innovation=z,
+        innovation_variance=np.ones(n),
+        standardized_innovation=z,
+        filtered_variance_level=zeros,
+        filtered_covariance=zeros,
+        filtered_variance_transient=zeros,
+        observed=zeros,
+        loglik_contribution=zeros,
+    )
+    diagnostics = result.diagnostics(max_lag=1)
+    assert diagnostics["minimum_exact_lag_pairs"] > 1_000
+    assert diagnostics["lag1_autocorrelation"] > 0.70
+    assert diagnostics["ljung_box_p"] < 1e-12

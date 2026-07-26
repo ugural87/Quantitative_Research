@@ -26,7 +26,7 @@ def test_single_day_pipeline_smoke(tmp_path: Path):
         index,
         train_duration="2000s",
         development_duration="600s",
-        purge_duration="63s",
+        purge_duration="66s",
         minimum_holdout_duration="1000s",
     )
 

@@ -51,6 +51,10 @@ class ProxyBacktestConfig:
     allow_short_spot: bool = False
 
     def __post_init__(self) -> None:
+        for name in ("entry_z", "exit_z", "stop_z"):
+            value = float(getattr(self, name))
+            if not math.isfinite(value):
+                raise ValueError(f"{name} must be finite")
         if not (self.entry_z > self.exit_z >= 0.0):
             raise ValueError("require entry_z > exit_z >= 0")
         if self.stop_z <= self.entry_z:
@@ -67,6 +71,13 @@ class ProxyBacktestConfig:
                 raise ValueError(f"{name} must be finite and non-negative")
         if self.execution_delay_seconds <= 0.0:
             raise ValueError("execution_delay_seconds must be strictly positive")
+
+    @property
+    def maximum_completed_episode_seconds(self) -> float:
+        """Worst-case decision-to-exit-fill duration when both fills succeed."""
+
+        one_fill_budget = self.execution_delay_seconds + self.max_fill_delay_seconds
+        return self.max_hold_seconds + 2.0 * one_fill_budget
 
 
 @dataclass(frozen=True)
@@ -306,7 +317,7 @@ def run_proxy_backtest_detailed(
             continue
 
         z = signal[i]
-        if not np.isfinite(z) or not tradable[i]:
+        if not np.isfinite(z) or not tradable[i] or not np.isfinite(basis[i]):
             continue
 
         if position == 0:
@@ -400,6 +411,53 @@ def run_proxy_backtest_detailed(
     )
 
 
+def summarize_proxy_result(
+    result: ProxyBacktestResult,
+    *,
+    model: str,
+) -> dict[str, object]:
+    """Return realised-trade metrics while keeping terminal state separate."""
+
+    closed = result.trades
+    row: dict[str, object] = {
+        "model": model,
+        "trades": len(closed),
+        "open_position": result.final_state.has_open_position,
+        "pending_action": result.final_state.pending_action,
+        "open_mtm_net_if_liquidated_bp": (
+            result.final_state.mark_to_market_net_bp_if_liquidated
+        ),
+        "cancelled_stale_actions": result.final_state.cancelled_stale_actions,
+    }
+    if closed.empty:
+        row.update({
+            "gross_total_bp": 0.0,
+            "net_total_bp": 0.0,
+            "avg_gross_bp": np.nan,
+            "avg_net_bp": np.nan,
+            "gross_win_rate": np.nan,
+            "net_win_rate": np.nan,
+            "median_holding_s": np.nan,
+            "max_drawdown_bp": np.nan,
+        })
+        return row
+
+    net_equity = closed["net_pnl_bp"].cumsum().to_numpy(dtype=float)
+    equity_with_origin = np.r_[0.0, net_equity]
+    drawdown = equity_with_origin - np.maximum.accumulate(equity_with_origin)
+    row.update({
+        "gross_total_bp": float(closed["gross_pnl_bp"].sum()),
+        "net_total_bp": float(closed["net_pnl_bp"].sum()),
+        "avg_gross_bp": float(closed["gross_pnl_bp"].mean()),
+        "avg_net_bp": float(closed["net_pnl_bp"].mean()),
+        "gross_win_rate": float((closed["gross_pnl_bp"] > 0).mean()),
+        "net_win_rate": float((closed["net_pnl_bp"] > 0).mean()),
+        "median_holding_s": float(closed["holding_s"].median()),
+        "max_drawdown_bp": float(drawdown.min()),
+    })
+    return row
+
+
 def run_proxy_backtest(
     frame: pd.DataFrame,
     *,
@@ -429,4 +487,5 @@ __all__ = [
     "ProxyBacktestResult",
     "run_proxy_backtest",
     "run_proxy_backtest_detailed",
+    "summarize_proxy_result",
 ]

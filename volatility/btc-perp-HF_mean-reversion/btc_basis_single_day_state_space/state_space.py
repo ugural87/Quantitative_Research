@@ -334,33 +334,92 @@ class FilterResult:
         )
 
     def diagnostics(self, max_lag: int = 20) -> dict[str, float]:
-        z = self.standardized_innovation[np.isfinite(self.standardized_innovation)]
-        if z.size < max(30, max_lag + 5):
+        """Innovation diagnostics on the original clock without closing gaps.
+
+        Missing innovations remain missing.  Autocorrelation at lag ``k`` uses
+        only pairs separated by exactly ``k`` clock steps, rather than deleting
+        gaps and accidentally treating observations several seconds apart as
+        adjacent.  With no missing values this is numerically identical to the
+        standard Ljung--Box calculation.
+        """
+
+        if max_lag < 1:
+            raise ValueError("max_lag must be at least one")
+
+        z_full = np.asarray(self.standardized_innovation, dtype=float)
+        finite = np.isfinite(z_full)
+        z = z_full[finite]
+        minimum = max(30, max_lag + 5)
+        if z.size < minimum:
             return {
                 "n": float(z.size),
+                "finite_share": float(finite.mean()) if finite.size else float("nan"),
                 "mean": float("nan"),
                 "sd": float("nan"),
                 "ljung_box_q": float("nan"),
                 "ljung_box_p": float("nan"),
+                "lag1_autocorrelation": float("nan"),
+                "minimum_exact_lag_pairs": float("nan"),
                 "jarque_bera": float("nan"),
                 "jarque_bera_p": float("nan"),
             }
-        centered = z - z.mean()
-        denom = float(np.dot(centered, centered))
-        acf = []
+
+        mean = float(z.mean())
+        centered = z_full - mean
+        denom = float(np.dot(z - mean, z - mean))
+        acf: list[float] = []
+        pair_counts: list[int] = []
         for lag in range(1, max_lag + 1):
-            acf.append(float(np.dot(centered[lag:], centered[:-lag]) / denom))
-        n = z.size
-        q = n * (n + 2.0) * sum(
-            rho * rho / max(n - lag, 1) for lag, rho in enumerate(acf, start=1)
-        )
+            pair_mask = finite[lag:] & finite[:-lag]
+            pair_count = int(pair_mask.sum())
+            pair_counts.append(pair_count)
+            if pair_count < minimum or denom <= 0.0:
+                acf.append(float("nan"))
+                continue
+            left = centered[lag:][pair_mask]
+            right = centered[:-lag][pair_mask]
+            numerator = float(np.dot(left, right))
+            if finite.all():
+                acf.append(numerator / denom)
+                continue
+            pair_denom = math.sqrt(float(np.dot(left, left) * np.dot(right, right)))
+            if not (math.isfinite(pair_denom) and pair_denom > 0.0):
+                acf.append(float("nan"))
+                continue
+            acf.append(numerator / pair_denom)
+
+        if any(not math.isfinite(rho) for rho in acf):
+            q = float("nan")
+            p_value = float("nan")
+        else:
+            n = z.size
+            if finite.all():
+                # Preserve the conventional complete-data Ljung--Box definition.
+                q = n * (n + 2.0) * sum(
+                    rho * rho / max(n - lag, 1)
+                    for lag, rho in enumerate(acf, start=1)
+                )
+            else:
+                # Generalise the Ljung--Box denominator to the number of exact
+                # clock-lag pairs available at each lag. Pairwise correlations
+                # avoid shrinking serial dependence merely because observations
+                # are missing elsewhere on the clock.
+                q = n * (n + 2.0) * sum(
+                    rho * rho / pair_count
+                    for rho, pair_count in zip(acf, pair_counts)
+                )
+            p_value = float(chi2.sf(q, df=max_lag))
+
         jb = jarque_bera(z)
         return {
-            "n": float(n),
-            "mean": float(z.mean()),
+            "n": float(z.size),
+            "finite_share": float(finite.mean()),
+            "mean": mean,
             "sd": float(z.std(ddof=1)),
             "ljung_box_q": float(q),
-            "ljung_box_p": float(chi2.sf(q, df=max_lag)),
+            "ljung_box_p": p_value,
+            "lag1_autocorrelation": float(acf[0]),
+            "minimum_exact_lag_pairs": float(min(pair_counts)),
             "jarque_bera": float(jb.statistic),
             "jarque_bera_p": float(jb.pvalue),
         }
@@ -400,12 +459,16 @@ class FilterResult:
                     f"innovation mean {diag['mean']:.4g} exceeds tolerance "
                     f"{mean_tolerance:.4g}"
                 )
-            if not (sd_bounds[0] <= diag["sd"] <= sd_bounds[1]):
+            if not math.isfinite(diag["sd"]) or not (
+                sd_bounds[0] <= diag["sd"] <= sd_bounds[1]
+            ):
                 failures.append(
                     f"innovation sd {diag['sd']:.4g} outside "
                     f"[{sd_bounds[0]:.4g}, {sd_bounds[1]:.4g}]"
                 )
-            if diag["ljung_box_p"] < alpha:
+            if not math.isfinite(diag["ljung_box_p"]):
+                failures.append("insufficient exact-clock innovation pairs")
+            elif diag["ljung_box_p"] < alpha:
                 failures.append(
                     f"residual autocorrelation rejected at alpha={alpha:g} "
                     f"(p={diag['ljung_box_p']:.3g})"
@@ -452,10 +515,18 @@ def _clean_series(values: ArrayLike) -> np.ndarray:
 
 
 def _robust_scale(y: np.ndarray) -> float:
+    """Robust one-step scale using only truly adjacent finite observations."""
+
     finite = y[np.isfinite(y)]
     if finite.size < 3:
         return 1e-6
-    differences = np.diff(finite)
+
+    adjacent = np.isfinite(y[1:]) & np.isfinite(y[:-1])
+    differences = np.diff(y)[adjacent]
+    if differences.size < 2:
+        scale = np.std(finite, ddof=1)
+        return max(float(scale) if math.isfinite(scale) else 1e-6, _MIN_SIGMA)
+
     mad = np.median(np.abs(differences - np.median(differences)))
     scale = mad / 0.6744897501960817 if mad > 0 else differences.std(ddof=1)
     if not (math.isfinite(scale) and scale > 0):
@@ -515,7 +586,17 @@ def _filter_core(
     store: bool = True,
 ) -> tuple[float, _FilterState, FilterResult | None, int]:
     n = y.size
-    state = initial_state or _initial_state(y, params)
+    if initial_state is None:
+        finite_idx = np.flatnonzero(np.isfinite(y))
+        if finite_idx.size == 0:
+            raise ValueError("series contains no finite observations")
+        first_observation_index = int(finite_idx[0])
+        state = _initial_state(
+            np.array([y[first_observation_index]], dtype=float), params
+        )
+    else:
+        first_observation_index = 0
+        state = initial_state
     b = params.b
     q_level = params.sigma_level**2
     q_transient = params.sigma_transient**2
@@ -540,6 +621,12 @@ def _filter_core(
     log_two_pi = math.log(2.0 * math.pi)
 
     for t, observation in enumerate(y):
+        # Before the first observation the latent level is undefined.  Leaving
+        # these states missing prevents the first future price from being copied
+        # backwards into earlier clock timestamps.
+        if initial_state is None and t < first_observation_index:
+            continue
+
         # One-step prediction.
         level_pred = state.level
         transient_pred = b * state.transient
@@ -561,17 +648,27 @@ def _filter_core(
             level_new = level_pred + k1 * residual
             transient_new = transient_pred + k2 * residual
 
-            # Covariance update P = P^- - K H P^-; then enforce symmetry/floors.
-            p11_new = p11_pred - k1 * hp1
-            p12_new = p12_pred - k1 * hp2
-            p21_new = p12_pred - k2 * hp1
-            p22_new = p22_pred - k2 * hp2
-            p12_new = 0.5 * (p12_new + p21_new)
+            # Joseph-form covariance update. It is algebraically equivalent to
+            # P = P^- - K H P^- but remains positive semidefinite under much
+            # more extreme scale ratios and floating-point cancellation.
+            a11 = 1.0 - k1
+            a12 = -k1
+            a21 = -k2
+            a22 = 1.0 - k2
+            m11 = a11 * p11_pred + a12 * p12_pred
+            m12 = a11 * p12_pred + a12 * p22_pred
+            m21 = a21 * p11_pred + a22 * p12_pred
+            m22 = a21 * p12_pred + a22 * p22_pred
+            p11_new = m11 * a11 + m12 * a12 + r * k1 * k1
+            p12_a = m11 * a21 + m12 * a22 + r * k1 * k2
+            p12_b = m21 * a11 + m22 * a12 + r * k1 * k2
+            p22_new = m21 * a21 + m22 * a22 + r * k2 * k2
+            p12_new = 0.5 * (p12_a + p12_b)
             p11_new = max(float(p11_new), _EPS)
             p22_new = max(float(p22_new), _EPS)
 
             ll = -0.5 * (log_two_pi + math.log(s) + residual * residual / s)
-            if t >= burn_in:
+            if t >= first_observation_index + burn_in:
                 loglik += ll
                 effective += 1
 
@@ -671,7 +768,7 @@ if _NUMBA_AVAILABLE:
         effective = 0
         log_two_pi = math.log(2.0 * math.pi)
 
-        for t in range(y.size):
+        for t in range(first, y.size):
             level_pred = level
             transient_pred = b * transient
             p11_pred = p11 + q_level
@@ -690,14 +787,22 @@ if _NUMBA_AVAILABLE:
                 k2 = hp2 / s
                 level = level_pred + k1 * residual
                 transient = transient_pred + k2 * residual
-                p11_new = p11_pred - k1 * hp1
-                p12_a = p12_pred - k1 * hp2
-                p12_b = p12_pred - k2 * hp1
-                p22_new = p22_pred - k2 * hp2
+                a11 = 1.0 - k1
+                a12 = -k1
+                a21 = -k2
+                a22 = 1.0 - k2
+                m11 = a11 * p11_pred + a12 * p12_pred
+                m12 = a11 * p12_pred + a12 * p22_pred
+                m21 = a21 * p11_pred + a22 * p12_pred
+                m22 = a21 * p12_pred + a22 * p22_pred
+                p11_new = m11 * a11 + m12 * a12 + r * k1 * k1
+                p12_a = m11 * a21 + m12 * a22 + r * k1 * k2
+                p12_b = m21 * a11 + m22 * a12 + r * k1 * k2
+                p22_new = m21 * a21 + m22 * a22 + r * k2 * k2
                 p11 = max(p11_new, _EPS)
                 p12 = 0.5 * (p12_a + p12_b)
                 p22 = max(p22_new, _EPS)
-                if t >= burn_in:
+                if t >= first + burn_in:
                     loglik += -0.5 * (
                         log_two_pi + math.log(s) + residual * residual / s
                     )
@@ -789,10 +894,21 @@ def _fit_local_level_null(
         if best is None or candidate.fun < best.fun:
             best = candidate
     assert best is not None
-    loglik = -float(best.fun)
-    effective = max(int(np.isfinite(y).sum()) - burn_in, 1)
+    sigma_level, sigma_observation = np.exp(best.x)
+    fitted_params = StateSpaceParams(
+        b=_MIN_B,
+        sigma_level=max(float(sigma_level), _MIN_SIGMA),
+        sigma_transient=_MIN_SIGMA,
+        sigma_observation=max(float(sigma_observation), _MIN_SIGMA),
+        dt_seconds=dt_seconds,
+    )
+    loglik, _, _, effective = _filter_core(
+        y, fitted_params, burn_in=burn_in, store=False
+    )
+    if effective <= 0 or not math.isfinite(loglik):
+        raise RuntimeError("local-level null optimisation did not produce a finite fit")
     bic = math.log(effective) * 2 - 2.0 * loglik
-    return loglik, bic
+    return float(loglik), float(bic)
 
 
 def fit_state_space(
@@ -923,6 +1039,8 @@ def filter_state_space(
 ) -> FilterResult:
     """One-sided Kalman filter; it never reads observations after time t."""
 
+    if burn_in < 0:
+        raise ValueError("burn_in cannot be negative")
     y = _clean_series(values)
     params = fit_or_params.params if isinstance(fit_or_params, StateSpaceFit) else fit_or_params
     _, _, result, _ = _filter_core(y, params, burn_in=burn_in, store=True)

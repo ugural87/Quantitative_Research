@@ -80,3 +80,41 @@ def test_failed_download_leaves_no_partial_file(tmp_path: Path, monkeypatch):
 
     assert not target.exists()
     assert not list(target.parent.glob("*.tmp"))
+
+
+def test_timestamp_unit_infers_binance_ms_and_us():
+    import pandas as pd
+
+    assert research_data.infer_timestamp_unit(pd.Series([1_700_000_000_000])) == "ms"
+    assert research_data.infer_timestamp_unit(pd.Series([1_700_000_000_000_000])) == "us"
+
+
+def test_availability_bars_use_right_edge_and_actual_event_age():
+    import pandas as pd
+
+    trades = pd.DataFrame({
+        "timestamp": pd.to_datetime([
+            "2026-01-01T00:00:00.800Z",
+            "2026-01-01T00:00:02.200Z",
+        ]),
+        "price": [100.0, 101.0],
+        "quantity": [1.0, 2.0],
+    })
+    bars = research_data.to_availability_bars(trades, "2026-01-01", 1)
+
+    assert bars.index[0] == pd.Timestamp("2026-01-01T00:00:01Z")
+    assert bars.index[-1] == pd.Timestamp("2026-01-02T00:00:00Z")
+    assert len(bars) == 86_400
+    assert bars.iloc[0]["last"] == pytest.approx(100.0)
+    assert bars.iloc[0]["age_s"] == pytest.approx(0.2)
+    assert bars.iloc[1]["last"] == pytest.approx(100.0)
+    assert bars.iloc[1]["age_s"] == pytest.approx(1.2)
+    assert bars.iloc[2]["last"] == pytest.approx(101.0)
+    assert bars.iloc[2]["age_s"] == pytest.approx(0.8)
+
+
+def test_git_revision_returns_metadata_or_none(tmp_path: Path):
+    metadata = research_data.git_revision(tmp_path)
+    assert set(metadata) == {"git_commit", "git_dirty"}
+    assert metadata["git_commit"] is None
+    assert metadata["git_dirty"] is None

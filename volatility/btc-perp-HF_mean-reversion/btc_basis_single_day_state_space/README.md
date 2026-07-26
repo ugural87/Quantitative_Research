@@ -71,6 +71,17 @@ filter_t = result.transient_filter_t
 stationary transient standard deviation. `filter_t` is posterior state-estimate
 confidence. They are not interchangeable.
 
+### Availability-time bar construction
+
+One-second bars are labelled at the right edge: a timestamp `t` contains trades
+from `[t-1s, t)`, so all information in the bar is available at the label time.
+Trade age is measured from the actual sub-second last-event timestamp. This
+prevents a bar's final trade from being timestamped one second too early and
+prevents every active bar from appearing artificially fresh.
+
+The full 86,400-point availability clock is retained. Missing or stale seconds
+remain missing rather than being deleted.
+
 ### One-day chronological research protocol
 
 The notebook creates exactly one chronological partition:
@@ -118,6 +129,7 @@ reported terminal mark is hypothetical and remains separate from realised P&L.
 `research_validation.py` provides:
 
 - the single-day train/development/purge/final-holdout partition;
+- a purge equal to the maximum hold plus both successful fill-delay budgets;
 - circular block-bootstrap confidence intervals;
 - centred-null circular block-bootstrap mean tests;
 - Benjamini–Hochberg false-discovery adjustment.
@@ -128,10 +140,11 @@ The notebook:
 
 - retains raw Binance ZIP archives;
 - calculates SHA-256 checksums;
-- keys parsed caches by archive checksum;
+- keys parsed caches by archive checksum and parser version;
 - writes the fitted model to JSON;
 - writes a run manifest containing archive metadata, partition boundaries,
-  configuration, package versions and principal outputs.
+  configuration, Python/package versions, Git commit/dirty state, promotion
+  gates and principal outputs.
 
 A pinned reference environment is supplied in `requirements-lock.txt`.
 
@@ -140,14 +153,20 @@ A pinned reference environment is supplied in `requirements-lock.txt`.
 A result remains diagnostic when any required gate fails:
 
 1. The transient model is not materially preferred to the local-level null.
-2. Final-holdout innovations fail centring, scale or residual-autocorrelation
-   checks.
+2. Final-holdout innovations fail centring, scale or exact-clock
+   residual-autocorrelation checks. Missing seconds are never compressed into
+   adjacent observations.
 3. Near-optimal likelihood solutions imply unstable half-life or transient
    scale.
 4. Dependent-data uncertainty includes economically irrelevant convergence.
-5. Conservative round-trip costs dominate the plausible signal capture.
-6. The state-space signal does not add value relative to causal simple
-   baselines under the same proxy event rules.
+5. The declared round-trip cost scenario dominates the nominal
+   entry-to-exit transient movement.
+6. Too few completed episodes are available for the declared dependent-data
+   inference gate, or its gross-mean interval includes zero.
+
+Causal rolling-z and training-only AR(1)/OU results are mandatory comparative
+context. They are not collapsed into an automatic winner because trade count,
+total convergence and per-episode quality are different estimands.
 
 Gaussian rejection is reported separately. It requires robust inference or a
 heavy-tailed model, but it does not automatically reject the conditional mean.
@@ -187,6 +206,8 @@ test_research_validation.py          split, bootstrap and FDR tests
 test_research_data.py                checksum, atomic download and manifest tests
 RESEARCH_PROTOCOL.md                 promotion and falsification contract
 EXECUTION_RESEARCH_HANDOFF.md        boundary for the separate execution project
+FINAL_AUDIT_REPORT.md                independent final audit and benchmark results
+FINAL_AUDIT_STRESS_RESULTS.json       machine-readable stress-test outputs
 ```
 
 ## Install
@@ -207,9 +228,9 @@ python -m pip install -r requirements-lock.txt
 pytest
 ```
 
-The supplied suite contains **47 deterministic tests**. The configured CI gate
-requires at least **80% aggregate statement coverage**. In the supplied
-environment the suite passes with approximately **80.91%** coverage.
+The supplied suite contains **58 deterministic tests**. The configured CI gate
+requires at least **80% aggregate statement coverage**. In the final audited
+environment the suite passes with approximately **81.08%** coverage.
 
 GitHub Actions runs compilation and the full test/coverage gate on Python 3.11
 and 3.12.
@@ -232,9 +253,15 @@ print(state["transient_stationary_z"], state["transient_filter_t"])
 
 ## Status
 
-This is a portfolio-grade quantitative research prototype with tested causal and
-event-time semantics. It is not a live strategy, exchange execution client,
-portfolio-management system or multi-day validation study.
+This is a portfolio-grade quantitative research prototype with independently
+stress-tested causal, Kalman-algebra and event-time semantics. It is not a live
+strategy, exchange execution client, portfolio-management system or multi-day
+validation study.
+
+The notebook emits an explicit `diagnostic_only` or
+`execution_research_candidate` status from predeclared BIC, identification,
+adequacy, economic-scale, sample-size and dependent-data gates. Passing those
+gates would only justify the separate execution-research project.
 
 Negative findings are first-class results.
 

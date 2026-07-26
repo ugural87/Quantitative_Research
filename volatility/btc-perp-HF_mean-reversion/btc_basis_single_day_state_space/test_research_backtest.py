@@ -203,3 +203,75 @@ def test_end_time_is_exclusive_and_validated():
             end_time=index[1],
             config=_config(),
         )
+
+
+def test_config_rejects_nonfinite_thresholds_and_reports_episode_budget():
+    with pytest.raises(ValueError, match="entry_z must be finite"):
+        _config(entry_z=float("nan"))
+    config = _config(
+        max_hold_seconds=60,
+        execution_delay_seconds=1,
+        max_fill_delay_seconds=2,
+    )
+    assert config.maximum_completed_episode_seconds == pytest.approx(66.0)
+
+
+def test_nonfinite_basis_cannot_create_a_decision():
+    from research_backtest import run_proxy_backtest_detailed
+
+    index = pd.date_range("2026-01-01", periods=4, freq="1s", tz="UTC")
+    frame = _frame(
+        index,
+        basis=[float("nan"), 10.0, 9.0, 8.0],
+        signal=[3.0, 0.0, 0.0, 0.0],
+        valid=[True, True, True, True],
+    )
+    result = run_proxy_backtest_detailed(
+        frame,
+        start_time=index[0],
+        config=_config(),
+    )
+    assert result.final_state.decisions == 0
+    assert result.trades.empty
+
+
+def test_summary_drawdown_starts_from_zero_equity():
+    from research_backtest import (
+        ProxyBacktestFinalState,
+        ProxyBacktestResult,
+        summarize_proxy_result,
+    )
+
+    trades = pd.DataFrame({
+        "gross_pnl_bp": [-4.0, 2.0],
+        "net_pnl_bp": [-5.0, 1.0],
+        "holding_s": [2.0, 3.0],
+    })
+    state = ProxyBacktestFinalState(
+        interval_start=pd.Timestamp("2026-01-01", tz="UTC"),
+        interval_end_exclusive=None,
+        last_clock_time=None,
+        last_tradable_time=None,
+        position=0,
+        side=None,
+        entry_decision_time=None,
+        entry_time=None,
+        entry_basis_bp=None,
+        entry_signal_z=None,
+        pending_action=None,
+        pending_reason=None,
+        pending_decision_time=None,
+        pending_due_time=None,
+        last_tradable_basis_bp=None,
+        mark_to_market_gross_bp=None,
+        mark_to_market_net_bp_if_liquidated=None,
+        completed_trades=2,
+        decisions=4,
+        fills=4,
+        cancelled_stale_actions=0,
+    )
+    row = summarize_proxy_result(
+        ProxyBacktestResult(trades=trades, final_state=state),
+        model="test",
+    )
+    assert row["max_drawdown_bp"] == pytest.approx(-5.0)

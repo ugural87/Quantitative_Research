@@ -10,3 +10,4 @@ build/
 data/
 artifacts/
 .DS_Store
+btc_basis_realdata_workbench_executed_local.ipynb

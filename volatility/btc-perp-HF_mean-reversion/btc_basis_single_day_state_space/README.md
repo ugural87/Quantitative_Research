@@ -1,9 +1,9 @@
 [![BTC basis single-day tests](https://github.com/ugural87/Quantitative_Research/actions/workflows/btc_basis_single_day_state_space.yml/badge.svg)](https://github.com/ugural87/Quantitative_Research/actions/workflows/btc_basis_single_day_state_space.yml)
 
-# BTC Spot–Perpetual Basis: Single-Day Causal State-Space Research
+# BTC Spot-Perpetual Basis: Single-Day Causal State-Space Research
 
 A research-grade, deliberately **single-day** workbench for testing whether the
-BTC spot–perpetual basis contains a causally observable mean-reverting component
+BTC spot-perpetual basis contains a causally observable mean-reverting component
 and whether its scale is economically meaningful relative to explicit costs.
 
 The project separates three claims:
@@ -92,7 +92,7 @@ The notebook creates exactly one chronological partition:
 4. **Final holdout:** the predeclared `ENTRY_Z=2.0` configuration and causal
    baselines are evaluated once.
 
-The exploratory sweep never reads final-holdout outcomes. Benjamini–Hochberg
+The exploratory sweep never reads final-holdout outcomes. Benjamini-Hochberg
 adjustment is applied to available block-bootstrap p-values across the sweep.
 
 ### Causal baselines
@@ -132,7 +132,7 @@ reported terminal mark is hypothetical and remains separate from realised P&L.
 - a purge equal to the maximum hold plus both successful fill-delay budgets;
 - circular block-bootstrap confidence intervals;
 - centred-null circular block-bootstrap mean tests;
-- Benjamini–Hochberg false-discovery adjustment.
+- Benjamini-Hochberg false-discovery adjustment.
 
 ### Reproducibility
 
@@ -267,4 +267,4 @@ Negative findings are first-class results.
 
 ## License
 
-MIT — see `LICENSE`.
+MIT - see `LICENSE`.

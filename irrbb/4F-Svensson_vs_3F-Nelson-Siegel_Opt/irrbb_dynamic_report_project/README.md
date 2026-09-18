@@ -4,8 +4,8 @@
 
 This project is a portfolio-grade prototype for **Interest Rate Risk in the Banking Book (IRRBB)**. It compares two parametric term-structure representations inside the same controlled banking-book measurement architecture:
 
-1. a **four-factor Nelson–Siegel–Svensson (NSS)** model, used as the more flexible curve-reconstruction challenger; and
-2. a **three-factor Nelson–Siegel (NS)** model, used as the more parsimonious structural level–slope–curvature benchmark.
+1. a **four-factor Nelson-Siegel-Svensson (NSS)** model, used as the more flexible curve-reconstruction challenger; and
+2. a **three-factor Nelson-Siegel (NS)** model, used as the more parsimonious structural level-slope-curvature benchmark.
 
 The project does not stop at curve fitting. Both models feed an identical downstream engine covering:
 
@@ -24,7 +24,7 @@ The central model-risk question is:
 
 > **Does a better in-sample or out-of-sample curve fit justify a more complex model when its factors are poorly identified and the downstream EVE/NII decision impact is immaterial?**
 
-The current live-data reference results show that the four-factor Svensson model reconstructs the observed curve more accurately, while the three-factor Nelson–Siegel model is materially better conditioned and more parsimonious. Direct PCA-to-beta alignment is mixed rather than decisively superior for either model, so the recommendation is based on the joint evidence from fit, conditioning, VIF, downstream materiality and governance use. The difference between the two models' EVE and NII outputs is negligible relative to the sensitivity created by the behavioural NMD assumption. The architecture therefore separates **valuation/reconstruction**, **structural risk attribution**, **model challenge**, and **funds-transfer pricing** rather than forcing one parametric curve to perform all four roles.
+The current live-data reference results show that the four-factor Svensson model reconstructs the observed curve more accurately, while the three-factor Nelson-Siegel model is materially better conditioned and more parsimonious. Direct PCA-to-beta alignment is mixed rather than decisively superior for either model, so the recommendation is based on the joint evidence from fit, conditioning, VIF, downstream materiality and governance use. The difference between the two models' EVE and NII outputs is negligible relative to the sensitivity created by the behavioural NMD assumption. The architecture therefore separates **valuation/reconstruction**, **structural risk attribution**, **model challenge**, and **funds-transfer pricing** rather than forcing one parametric curve to perform all four roles.
 
 > **Scope statement:** this is an auditable research and portfolio prototype, not a production regulatory engine, an approved internal measurement system, or a complete implementation of the Basel standardised framework.
 
@@ -204,8 +204,8 @@ A key conclusion of the project is that one curve model should not automatically
 | Purpose | Recommended component |
 |---|---|
 | Valuation and scenario discounting | Approved market curve and instrument-convention service |
-| Structural level/slope/curvature attribution | Three-factor Nelson–Siegel benchmark |
-| Flexible reconstruction and challenger testing | Four-factor Nelson–Siegel–Svensson |
+| Structural level/slope/curvature attribution | Three-factor Nelson-Siegel benchmark |
+| Flexible reconstruction and challenger testing | Four-factor Nelson-Siegel-Svensson |
 | Funds-transfer pricing | Separate FTP stack including funding, liquidity, basis and optionality components |
 | Behavioural cash-flow generation | Independently developed and validated NMD/prepayment/early-redemption models |
 
@@ -217,7 +217,7 @@ The notebooks refit an observed zero-curve panel for controlled model comparison
 
 ### `01_four_factor_svensson_irrbb_engine.ipynb`
 
-Implements the four-beta Nelson–Siegel–Svensson challenger:
+Implements the four-beta Nelson-Siegel-Svensson challenger:
 
 $$
 z(\tau)=\beta_0+\beta_1L_1(\tau;\lambda_1)+\beta_2L_2(\tau;\lambda_1)+\beta_3L_3(\tau;\lambda_2).
@@ -239,7 +239,7 @@ Main responsibilities:
 
 ### `02_three_factor_nelson_siegel_irrbb_engine.ipynb`
 
-Implements the parsimonious three-beta Nelson–Siegel model:
+Implements the parsimonious three-beta Nelson-Siegel model:
 
 $$
 z(\tau)=\beta_0+\beta_1L_1(\tau;\lambda_1)+\beta_2L_2(\tau;\lambda_1).
@@ -459,7 +459,7 @@ The committed reference snapshot in this package was regenerated from the upload
 
 ### Term-structure model comparison
 
-| Metric | Four-factor Svensson | Three-factor Nelson–Siegel | Interpretation |
+| Metric | Four-factor Svensson | Three-factor Nelson-Siegel | Interpretation |
 |---|---:|---:|---|
 | Test mean RMSE | **2.364 bp** | 3.387 bp | Svensson reconstructs the held-out curve more closely. |
 | Test 95th-percentile RMSE | **4.498 bp** | 5.501 bp | Svensson also has the lower tail-fit error. |
@@ -467,11 +467,11 @@ The committed reference snapshot in this package was regenerated from the upload
 | Loading condition number | 296.7 | **17.1** | NS is materially better conditioned. |
 | Maximum loading correlation | 0.964 | **0.375** | NSS loadings compete much more strongly. |
 | `abs(corr(PC1, Δβ0))` | 0.575 | 0.579 | No decisive direct level-factor winner. |
-| Mean matched PC–beta correlation | 0.692 | 0.614 | Not dimension-neutral; NSS has four candidate betas for three PCs. |
+| Mean matched PC-beta correlation | 0.692 | 0.614 | Not dimension-neutral; NSS has four candidate betas for three PCs. |
 
 ### IRRBB outputs
 
-| Metric | Four-factor Svensson | Three-factor Nelson–Siegel |
+| Metric | Four-factor Svensson | Three-factor Nelson-Siegel |
 |---|---:|---:|
 | Base EVE | 271.765 mm | 271.155 mm |
 | Worst EVE scenario | Parallel up | Parallel up |
@@ -508,7 +508,7 @@ The business conclusion is therefore:
 
 ### Structural benchmark
 
-Use the **three-factor Nelson–Siegel model** as the parsimonious structural and governance benchmark because it provides:
+Use the **three-factor Nelson-Siegel model** as the parsimonious structural and governance benchmark because it provides:
 
 - materially better numerical conditioning;
 - much lower loading collinearity and VIF;
@@ -536,7 +536,7 @@ Data mode is controlled by the `IRRBB_DATA_MODE` environment variable.
 
 | Mode | Behaviour |
 |---|---|
-| `AUTO` | Attempts to download the Federal Reserve Gürkaynak–Sack–Wright zero-curve panel; falls back to the labelled offline panel if unavailable. |
+| `AUTO` | Attempts to download the Federal Reserve Gürkaynak-Sack-Wright zero-curve panel; falls back to the labelled offline panel if unavailable. |
 | `LIVE` | Requires the Federal Reserve download to succeed and fails rather than silently substituting synthetic data. |
 | `OFFLINE` | Uses the deterministic reference panel committed under `data/`. |
 
@@ -848,19 +848,19 @@ A production implementation would require at least the following extensions:
 
 ## 21. References
 
-1. Basel Committee on Banking Supervision, **SRP31 — Interest rate risk in the banking book**, version effective 1 January 2026.  
+1. Basel Committee on Banking Supervision, **SRP31 - Interest rate risk in the banking book**, version effective 1 January 2026.  
    https://www.bis.org/basel_framework/chapter/SRP/31.htm?inforce=20260101&published=20240716
 
-2. Basel Committee on Banking Supervision, **SRP98 — Application guidance on interest rate risk in the banking book**, version effective 1 January 2026.  
+2. Basel Committee on Banking Supervision, **SRP98 - Application guidance on interest rate risk in the banking book**, version effective 1 January 2026.  
    https://www.bis.org/basel_framework/chapter/SRP/98.htm?inforce=20260101&published=20240716
 
 3. Basel Committee on Banking Supervision, **Recalibration of shocks for interest rate risk in the banking book**, 16 July 2024.  
    https://www.bis.org/bcbs/publ/d578.htm
 
-4. Basel Committee on Banking Supervision, **DIS70 — Interest rate risk in the banking book disclosure requirements**.  
+4. Basel Committee on Banking Supervision, **DIS70 - Interest rate risk in the banking book disclosure requirements**.  
    https://www.bis.org/basel_framework/chapter/DIS/70.htm
 
-5. Federal Reserve Board, **Nominal Yield Curve — Gürkaynak, Sack and Wright data**.  
+5. Federal Reserve Board, **Nominal Yield Curve - Gürkaynak, Sack and Wright data**.  
    https://www.federalreserve.gov/data/nominal-yield-curve.htm
 
 6. Gürkaynak, R. S., Sack, B. and Wright, J. H., **The U.S. Treasury Yield Curve: 1961 to the Present**, Finance and Economics Discussion Series 2006-28.

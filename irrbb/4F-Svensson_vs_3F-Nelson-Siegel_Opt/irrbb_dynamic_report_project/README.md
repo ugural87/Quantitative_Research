@@ -30,6 +30,18 @@ The current live-data reference results show that the four-factor Svensson model
 
 ---
 
+
+## System map
+
+```mermaid
+flowchart LR
+    A["Zero-curve data"] --> B["NS3 and NSS4 calibration"]
+    B --> C["Fit, identification and stability"]
+    C --> D["Cash flows and NMD assumptions"]
+    D --> E["EVE and NII scenarios"]
+    E --> F["Model-risk recommendation"]
+```
+
 ## 1. Problem statement
 
 Banks transform maturities and reprice assets and liabilities at different times. A change in the level or shape of interest-rate curves can therefore alter both:

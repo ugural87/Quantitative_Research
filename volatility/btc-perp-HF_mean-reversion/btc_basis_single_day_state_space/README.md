@@ -17,6 +17,18 @@ The project separates three claims:
 
 It does **not** claim executable P&L.
 
+
+## Research map
+
+```mermaid
+flowchart LR
+    A["Spot and perpetual events"] --> B["Availability-time bars"]
+    B --> C["Causal state-space model"]
+    C --> D["Signal and proxy events"]
+    D --> E["Chronological backtest"]
+    E --> F["Dependent-data inference"]
+```
+
 ## Scope contract: one day by design
 
 This repository intentionally studies one settled UTC day. That is a design
